@@ -169,6 +169,83 @@ C++的**exception handing** 由3个主要的语汇组件构成：
 > （c）进行到程序堆栈的下一个函数中去，然后重复上述步骤2~5
 
  
+下面是《Effective C++》中的一些笔记，《Effective C++》主要介绍的是C++编程中的一些陷阱和避免的方法。  
+
+C++中的四种编程范式（programming Paradigms）：   
+1. procedure\_based 面向过程  
+2. objectb\_based  基于对象
+3. object\_oriented 面向对象编程
+4. generics 泛型编程  
+
+> 注意C++ 11中新增的Lambdal表达式算是对函数时编程的支持吧？？  
+
+
+lhs为left-hand-side：左端  
+rhs为right-hand-size：右端  
+
+如果自己没有声明，编译器就会为它声明（编译器版本的）一个copy构造函数，一个copy assignment操作符合一个析构函数，此外，如果你没有声明任何构造函数，编译器也会为你声明一个default构造函数，所有这个函数都是public且inline。  
+
+**default构造函数和析构函数** 主要是给编译器一个地方用来放置“藏身幕后”的代码，像是调用base class和non-static成员变量的构造函数和析构函数。注意，编译器产生的析构函数时个non-virtual，除非这个类的base class自身声明有virtual析构函数（这种情况下这个函数的虚属性virtualness，主要来自于base class）。  
+
+copy构造函数和copy assignment操作符，编译器创建的版本只是单纯地将来源对象的每个non-static成员变量拷贝到目标对象（static成员变量不会被拷贝）。  
+
+> reference不能更改指向不同的对象。  
+
+
+如果打算在一个“内含reference成员”或“内含const成员”的类内支持赋值操作符，必须自定义copy assignment。这是由于更改reference或const成员都是不合法的。  
+
+如果某个base class将copy assignment操作符声明为private，编译器将拒绝为其derived class 生成一个copy assignemnt操作符，毕竟编译器为derived class生成的copy assignment操作符想象中可以处理的base class成分，但它们无法调用derived class无法调用的成员函数。  
+
+将成员函数声明为private而且故意不实现它们可以阻止copy assignment和copy构造。
+如果用户企图拷贝对象，编译器会报异常。  
+如果member函数或friend函数如此做，链接器会报异常。  
+
+**public，protected，private继承**：
+
+![](http://hi.csdn.net/attachment/201109/22/0_13166619691N3C.gif)
+
+1. public继承
+    从语义角度上来说，public继承是一种接口继承（可以理解为子类对象可以调用父类的接口，也就有可能实现多态了）
+    从语法角度上来说，public继承后，关系见上图。很明显父类public成员在子类中仍然是public，所以子类对象可以调用父类的接口
+ 
+2. protected继承
+    从语义角度上来说，protected继承是一种实现继承
+    从语法角度上来说，protected继承后，父类public和protected成员都变成子类的protected成员了，也就是说子类对象无法调用父类的接口，只能将父类的函数当作子类的内部实现，当然也就不符合“Liskov替换原则（LSP）”了。
+ 
+3. private继承
+    从语义角度上来说，private继承是一种实现继承
+    从语法角度上来说，private继承后，父类public和protected成员都变成子类的private了，它比protected继承更严格。也就说这些父类的成员只能被继承一次，再继续继承，父类的成员就不可见了。private继承更不符合“Liskov替换原则（LSP）”了。  
+
+**里氏替换(Liskov Substitution Principle,LSP)**：面向对象设计的基本原则之一，里氏替换原则是说，任何基类可以出现的地方，子类一定可以出现，LSP是继承复用的基石。只有当衍生类可以替换掉基类，软件单位的功能不受影响时，基类才能真正被复用，而衍生类也可能在基类的基础上增加新的行为。  
+
+当你编写一个copying函数时（拷贝构造函数或赋值操作符）请确保：复制所有local成员变量；调用所有base clas内适当的copying函数。  
+
+
+对象的布局方式和它们的地址计算方式随编译器的不同而不同。  
+
+**inline**在大多数C++程序中是编译器行为，inline只是对编译器的一个申请，不是强制命令。这项申请可以随时隐喻提出，也可以明确提出，隐喻方式是将函数定义于class定义式内。  
+
+编译器必须在编译期间知道对象的大小。  
+
+
+C++名称遮掩规则所做的唯一事情就是：遮掩名称，至于名称是否应和相同或不同的类型，并不重要。  
+
+**接口继承**和**实现继承**不同，在public继承下，derived class总是继承base class 的接口。  
+pure virtual函数只具体制定接口继承。  
+inpure virtual函数具体指定接口继承及缺省的实现继承。 
+non-virtual 函数具体指定接口继承以及强制实现继承。  
+
+
+在应用域（application domain），复合意味着has-a(有一个)，在实现域（implementation domain），复合意味着is implemented in terms of(根据某物实现出)。  
+
+private继承纯粹是一种实现技术，意味implemented in terms of，private继承在软件“设计”层面上没有意义，其意义只及于软件实现层面。  
+
+private继承意味is implement in terms of，它通常比复合的级别低，但是当继承类需要访问protected base class的成员，或需要重新定义继承而来的virtual函数时，那么实际是合理的。和复合不同，private继承可以造成empty base最优化，这对致力于“对象尺寸最小化”的程序库开发者而言，可能很重要。  
+
+声明template参数时，前缀关键字class和typename可互换。  
+请使用关键字typename标示嵌套从属类型名称；  
+但不得在base calss lists（基类列表）式或member initialization lists（成员初始列表）内以它作为基类修饰符。  
+
 
 
     
